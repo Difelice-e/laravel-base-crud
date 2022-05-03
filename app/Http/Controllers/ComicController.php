@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Comic;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ComicController extends Controller
 {
@@ -15,7 +16,6 @@ class ComicController extends Controller
     public function index()
     {
         $comics = Comic::all();
-
         return view('comics.index', compact('comics'));
     }
 
@@ -37,15 +37,28 @@ class ComicController extends Controller
      */
     public function store(Request $request)
     {
+        $request->validate([
+            'title' => 'required|min:5|max:50',
+            'type' => [
+                'required',
+                'max:50',
+                Rule::in(['book', 'novel']),
+            ],
+            'thumb' => 'required|url',
+            'price' => 'required|numeric',
+            'series' => 'required|max:100',
+            'sale_date' => 'required|date',
+            'description' => 'nullable'
+        ]);
+
         $data = $request->all();
 
-        $comic = new Comic();
-        $comic->title = $data['title'];
-        $comic->description = $data['description'];
+        $newComics = new Comic();
+        $newComics->fill($data);
 
-        $comic->save();
+        $newComics->save();
 
-        return redirect()->route('comics.index');
+        return redirect()->route('comics.show', $newComics->id);
     }
 
     /**
@@ -54,9 +67,13 @@ class ComicController extends Controller
      * @param  \App\Comic  $comic
      * @return \Illuminate\Http\Response
      */
-    public function show(Comic $comic)
+    public function show($id)
     {
         //
+
+        $comics = Comic::findOrFail($id);
+
+        return view('comics.show', compact('comics'));
     }
 
     /**
@@ -67,7 +84,7 @@ class ComicController extends Controller
      */
     public function edit(Comic $comic)
     {
-        //
+        return view('comics.edit', compact('comic'));
     }
 
     /**
@@ -79,7 +96,24 @@ class ComicController extends Controller
      */
     public function update(Request $request, Comic $comic)
     {
-        //
+        $request->validate([
+            'title' => 'required|min:5|max:50',
+            'type' => [
+                'required',
+                'max:50',
+                Rule::in(['book', 'novel']),
+            ],
+            'thumb' => 'required|url',
+            'price' => 'required|numeric',
+            'series' => 'required|max:100',
+            'sale_date' => 'required|date',
+            'description' => 'nullable'
+        ]);
+
+        $data = $request->all();
+
+        $comic->update($data);
+        return redirect()->route('comics.show', $comic->id);
     }
 
     /**
@@ -91,5 +125,7 @@ class ComicController extends Controller
     public function destroy(Comic $comic)
     {
         //
+        $comic->delete();
+        return redirect()->route('comics.index');
     }
 }
